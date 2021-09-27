@@ -131,7 +131,7 @@ class Block:
                     hold.remove(grid[i][pos[1]])
             tile_number_possibilities.append(hold)
         # Generates a list of all possible permutation of numbers given the possible numbers for each tile
-        tile_number_possibilities = list(itertools.product(*tile_number_possibilities))
+        tile_number_possibilities_sets = list(itertools.product(*tile_number_possibilities))
 
         # Next up calculates the possible permutations of N numbers given the sign and value
         if self.sign is None:
@@ -162,8 +162,15 @@ class Block:
             possible_sets = [t for t in possible_sets if self.product(t) == self.value]
 
         # With these 2 lists of permutations, find the intersection (IE the list of values that are common to both)
-        same = self.intersection_of_tiles_and_possible_sets(possible_sets, tile_number_possibilities)
-        return same
+        same = self.intersection_of_tiles_and_possible_sets(possible_sets, tile_number_possibilities_sets)
+        if len(same) == 1:
+            return [True]*len(self.positions)
+        elif len(same) > 1:
+            len_check = [len(x) == 1 for x in tile_number_possibilities]
+            print(tile_number_possibilities, same)
+            return len_check
+        else:
+            return [False]*len(self.positions)
 
     """
     Setters

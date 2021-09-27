@@ -144,5 +144,4 @@ class KenKenGeneratorBacktrackingNode:
 
     # Returns True if for a given block, there is only 1 possible input
     def is_block_solution_unique(self, block):
-        l = len(block.calculate_all_possible_sets(self.current_grid))
-        return 0 < l <= 1
+        return all(block.calculate_all_possible_sets(self.current_grid))
