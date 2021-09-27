@@ -161,16 +161,28 @@ class Block:
             possible_sets = list(itertools.combinations_with_replacement(possible_numbers, n))
             possible_sets = [t for t in possible_sets if self.product(t) == self.value]
 
+
         # With these 2 lists of permutations, find the intersection (IE the list of values that are common to both)
         same = self.intersection_of_tiles_and_possible_sets(possible_sets, tile_number_possibilities_sets)
+        same = [t for t in same if self.are_values_valid_relative_to_each_other(t)]
+        print(same)
         if len(same) == 1:
             return [True]*len(self.positions)
         elif len(same) > 1:
             len_check = [len(x) == 1 for x in tile_number_possibilities]
-            print(tile_number_possibilities, same)
+            #print(tile_number_possibilities, same)
             return len_check
         else:
             return [False]*len(self.positions)
+
+    def are_values_valid_relative_to_each_other(self, values):
+        index_pairs = set(itertools.combinations([x for x in range(len(self.positions))], 2))
+        for i1,i2 in index_pairs:
+            if self.positions[i1][0] == self.positions[i2][0] or self.positions[i1][1] == self.positions[i2][1]:
+                if values[i1] == values[i2]:
+                    return False
+        return True
+
 
     """
     Setters
@@ -191,7 +203,7 @@ class Block:
         if len(tile_number_possibilities) == 0 or len(possible_sets) == 0:
             return []
         hold = []
-        combine = list(itertools.product(possible_sets,tile_number_possibilities))
+        combine = list(itertools.product(tile_number_possibilities,possible_sets))
         for a,b in combine:
             status = True
             for v in a:
