@@ -29,3 +29,14 @@ class TileFrame(tk.Frame):
 
     def position_in_grid(self, r, c):
         self.grid(row=r, column=c)
+
+    def focus(self):
+        self.l1["bg"] = "grey"
+        self.l2["bg"] = "grey"
+
+    def unfocus(self):
+        self.l1["bg"] = "white"
+        self.l2["bg"] = "white"
+
+    def set_number(self,number):
+        self.l2["text"] = number
