@@ -19,7 +19,7 @@ class KenKenGrid:
     sz: defines the height and width of the grid
     """
 
-    def __init__(self, sz=6):
+    def __init__(self, sz):
         self.sz = sz
         hold = [0] * sz
         for i in range(sz):
@@ -50,7 +50,7 @@ class KenKenGrid:
                 # Otherwise, push a new node to the top of the stack with the value updated at this position
                 hold_grid = node.grid.copy()
                 hold_grid[node.position[0]][node.position[1]] = next_value
-                self.stack.append(NumberGridGenerationBackTrackNode(hold_grid, node.get_appended_position(), self.sz))
+                self.stack.append(NumberGridGenerationBackTrackNode(hold_grid,  self.sz, node.get_appended_position()))
 
 
 """
@@ -59,7 +59,7 @@ This class represents a single node used in this backtracking algorithm
 
 
 class NumberGridGenerationBackTrackNode:
-    def __init__(self, grid, position=(0, 0), sz=6):
+    def __init__(self, grid, sz, position=(0, 0)):
         self.sz = sz
         self.position = position
         self.grid = grid
@@ -115,7 +115,7 @@ The code below was used for testing solely the number grid generation functional
 """
 if __name__ == '__main__':
     size = 8
-    kkgrid = KenKenGrid(size)
+    kkgrid = KenKenGrid(size,size)
     kkgrid.generate_random_grid()
     root = tkinter.Tk()
     for c in range(size):

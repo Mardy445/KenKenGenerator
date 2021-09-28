@@ -40,7 +40,7 @@ class RandomGridSegmentation:
                 f = (1 / (len(block.positions)+0.01))
 
                 # Uses random number generation to determine whether or not to attempt to add another tile
-                if r > f or len(block.positions) == 5:
+                if r > f or len(block.positions) == self.sz:
                     break
                 pos = block.get_possible_next_position(self.available_positions)
                 # If no possible neighbours, end generation for this block

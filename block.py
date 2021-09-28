@@ -121,14 +121,17 @@ class Block:
 
         # Firstly determines what values are possible based on surrounding blocks and tiles
         for pos in self.positions:
-            hold = [x + 1 for x in range(self.sz)]
+            if grid[pos[0]][pos[1]] != 0:
+                hold = [grid[pos[0]][pos[1]]]
+            else:
+                hold = [x + 1 for x in range(self.sz)]
 
-            # Removes any numbers from the hold list that already exist on the same row and column as the current pos
-            for i in range(self.sz):
-                if grid[pos[0]][i] in hold:
-                    hold.remove(grid[pos[0]][i])
-                if grid[i][pos[1]] in hold:
-                    hold.remove(grid[i][pos[1]])
+                # Removes any numbers from the hold list that already exist on the same row and column as the current pos
+                for i in range(self.sz):
+                    if grid[pos[0]][i] in hold:
+                        hold.remove(grid[pos[0]][i])
+                    if grid[i][pos[1]] in hold:
+                        hold.remove(grid[i][pos[1]])
             tile_number_possibilities.append(hold)
         # Generates a list of all possible permutation of numbers given the possible numbers for each tile
         tile_number_possibilities_sets = list(itertools.product(*tile_number_possibilities))
@@ -161,15 +164,21 @@ class Block:
             possible_sets = list(itertools.combinations_with_replacement(possible_numbers, n))
             possible_sets = [t for t in possible_sets if self.product(t) == self.value]
 
+        return tile_number_possibilities, tile_number_possibilities_sets, possible_sets
+
+    def get_tile_unique_boolean_values(self, grid):
+        tile_number_possibilities,tile_number_possibilities_sets,possible_sets = self.calculate_all_possible_sets(grid)
 
         # With these 2 lists of permutations, find the intersection (IE the list of values that are common to both)
         same = self.intersection_of_tiles_and_possible_sets(possible_sets, tile_number_possibilities_sets)
         same = [t for t in same if self.are_values_valid_relative_to_each_other(t)]
-        print(same)
+
+        #print(same)
         if len(same) == 1:
             return [True]*len(self.positions)
         elif len(same) > 1:
-            len_check = [len(x) == 1 for x in tile_number_possibilities]
+            #len_check = [len(x) == 1 for x in tile_number_possibilities]
+            len_check = [len(tile_number_possibilities[i]) == 1 and grid[self.positions[i][0]][self.positions[i][1]] == 0 for i in range(len(tile_number_possibilities))]
             #print(tile_number_possibilities, same)
             return len_check
         else:
@@ -182,7 +191,6 @@ class Block:
                 if values[i1] == values[i2]:
                     return False
         return True
-
 
     """
     Setters

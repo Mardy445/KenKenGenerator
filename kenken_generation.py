@@ -1,9 +1,6 @@
-import tkinter as tk
 import random
 import copy
-from generate_number_grid import KenKenGrid
-from generate_segemented_grid_map import RandomGridSegmentation
-from custom_tile import TileFrame
+import sys
 
 """
 This file contains the primary code for generating a KenKen grid
@@ -30,6 +27,7 @@ class KenKenGenerator:
     """
 
     def begin_generation(self):
+        fail_count = 0
         while len(self.stack) > 0:
             # Peeks at the node on top of the stack
             node = self.stack[len(self.stack) - 1]
@@ -42,7 +40,10 @@ class KenKenGenerator:
             new_node = node.get_next_valid_child_node(self.grid)
             if new_node is not None:
                 self.stack.append(new_node)
+            elif fail_count == 20:
+                return None
             else:
+                fail_count += 1
                 self.stack.pop()
 
         # There may be no way of assigning signs to the blocks such that an unambiguous solution exists
@@ -90,26 +91,24 @@ class KenKenGeneratorBacktrackingNode:
         self.signs = ["+", "-", "*", "/"]
         self.i = 0
 
-        random.shuffle(self.remaining_blocks)
+        #random.shuffle(self.remaining_blocks)
         random.shuffle(self.signs)
 
     """
     Returns the next valid node such that a non-ambiguous step exists from this node to the returned node
     """
     def get_next_valid_child_node(self, number_grid):
-        if len(self.signs) == 0:
-            self.signs = ["+", "-", "*", "/"]
-            random.shuffle(self.signs)
-            self.i += 1
-            if self.i == len(self.remaining_blocks):
-                return None
+        if self.i == len(self.remaining_blocks):
+            return None
 
         block = copy.copy(self.remaining_blocks[self.i])
+
+        #print(self.i,len(self.remaining_blocks))
 
         if len(block.positions) == 1:
             block.set_value(number_grid[block.positions[0][0]][block.positions[0][1]])
             self.signs = []
-            return self.generate_new_node(block, number_grid)
+            return self.generate_new_node(block, number_grid,[True])
         else:
             while len(self.signs) > 0:
                 sign = self.signs.pop()
@@ -122,24 +121,28 @@ class KenKenGeneratorBacktrackingNode:
                 elif sign == "/":
                     block.calculate_divide(number_grid)
                 if block.sign is not None:
-                    if self.is_block_solution_unique(block):
-                        break
+                    unique_bool_array = block.get_tile_unique_boolean_values(self.current_grid)
+                    if any(unique_bool_array):
+                        return self.generate_new_node(block, number_grid, unique_bool_array)
                     else:
                         block.reset_value_and_sign()
 
-        if block.sign is None:
-            return self.get_next_valid_child_node(number_grid)
-        else:
-            return self.generate_new_node(block, number_grid)
+        self.signs = ["+", "-", "*", "/"]
+        random.shuffle(self.signs)
+        self.i += 1
+        return self.get_next_valid_child_node(number_grid)
 
-    def generate_new_node(self, block, number_grid):
-        hold_grid = self.current_grid.copy()
+    def generate_new_node(self, block, number_grid, unique_bool_array):
+        hold_grid = copy.deepcopy(self.current_grid)
         hold_remaining_blocks = copy.copy(self.remaining_blocks)
         hold_complete_blocks = copy.deepcopy(self.complete_blocks)
-        for pos in block.positions:
-            hold_grid[pos[0]][pos[1]] = number_grid[pos[0]][pos[1]]
-        del hold_remaining_blocks[self.i]
-        hold_complete_blocks.append(block)
+        for i,pos in enumerate(block.positions):
+            if unique_bool_array[i]:
+                hold_grid[pos[0]][pos[1]] = number_grid[pos[0]][pos[1]]
+
+        if all(unique_bool_array):
+            del hold_remaining_blocks[self.i]
+            hold_complete_blocks.append(block)
         return KenKenGeneratorBacktrackingNode(hold_grid, hold_remaining_blocks, hold_complete_blocks)
 
     # Returns True if for a given block, there is only 1 possible input
