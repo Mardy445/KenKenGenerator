@@ -1,5 +1,7 @@
 import random
 import itertools
+from collections import Counter
+import copy
 
 """
 This file contains the Block object which represents each block of the KenKen board.
@@ -10,17 +12,33 @@ class Block:
     positions = []
     sign = None
     value = 0
+    numbers = []
 
-    def __init__(self, init, sz):
+    p1_range = 1
+    p2_range = 1
+    p1_absolutes = []
+    p2_absolutes = []
+
+    complete = False
+
+    def __init__(self, init, init_number, sz):
+        self.numbers = []
         self.positions = []
         self.positions.append(init)
+        self.numbers.append(init_number)
         self.sz = sz
+        self.p1_absolutes = []
+        self.p2_absolutes = []
 
     """
     Appends a new position to the block
     """
-    def add_new_tile(self, pos):
+    def add_new_tile(self, pos,  number):
         self.positions.append(pos)
+        self.p1_range = len({p[0] for p in self.positions})
+        self.p2_range = len({p[1] for p in self.positions})
+        self.numbers.append(number)
+
 
     """
     Returns an available neighbouring position.
@@ -114,7 +132,7 @@ class Block:
     """
     Calculates and returns all possible permutations for the block given the board
     """
-    def calculate_all_possible_sets(self, grid):
+    def calculate_all_possible_sets(self, grid, reserved_values_p1,reserved_values_p2):
         n = len(self.positions)
         tile_number_possibilities = []
         possible_sets = []
@@ -125,13 +143,19 @@ class Block:
                 hold = [grid[pos[0]][pos[1]]]
             else:
                 hold = [x + 1 for x in range(self.sz)]
-
-                # Removes any numbers from the hold list that already exist on the same row and column as the current pos
                 for i in range(self.sz):
-                    if grid[pos[0]][i] in hold:
-                        hold.remove(grid[pos[0]][i])
-                    if grid[i][pos[1]] in hold:
-                        hold.remove(grid[i][pos[1]])
+                    if i != pos[1]:
+                        if grid[pos[0]][i] in hold:
+                            hold.remove(grid[pos[0]][i])
+                        for rv in reserved_values_p1[pos[0]][i]:
+                            if rv in hold:
+                                hold.remove(rv)
+                    if i != pos[0]:
+                        if grid[i][pos[1]] in hold:
+                            hold.remove(grid[i][pos[1]])
+                        for rv in reserved_values_p2[i][pos[1]]:
+                            if rv in hold:
+                                hold.remove(rv)
             tile_number_possibilities.append(hold)
         # Generates a list of all possible permutation of numbers given the possible numbers for each tile
         tile_number_possibilities_sets = list(itertools.product(*tile_number_possibilities))
@@ -166,23 +190,36 @@ class Block:
 
         return tile_number_possibilities, tile_number_possibilities_sets, possible_sets
 
-    def get_tile_unique_boolean_values(self, grid):
-        tile_number_possibilities,tile_number_possibilities_sets,possible_sets = self.calculate_all_possible_sets(grid)
+    def get_tile_unique_boolean_values(self, grid, reserved_values_p1, reserved_values_p2):
+        tile_number_possibilities,tile_number_possibilities_sets,possible_sets = self.calculate_all_possible_sets(grid, reserved_values_p1, reserved_values_p2)
 
         # With these 2 lists of permutations, find the intersection (IE the list of values that are common to both)
         same = self.intersection_of_tiles_and_possible_sets(possible_sets, tile_number_possibilities_sets)
         same = [t for t in same if self.are_values_valid_relative_to_each_other(t)]
+        contains_actual_value = self.does_same_contain_actual_value(same)
 
-        #print(same)
-        if len(same) == 1:
-            return [True]*len(self.positions)
-        elif len(same) > 1:
-            #len_check = [len(x) == 1 for x in tile_number_possibilities]
+        if len(same) == 1 and contains_actual_value:
+            return [True]*len(self.positions), [], []
+        elif len(same) > 1 and contains_actual_value:
             len_check = [len(tile_number_possibilities[i]) == 1 and grid[self.positions[i][0]][self.positions[i][1]] == 0 for i in range(len(tile_number_possibilities))]
-            #print(tile_number_possibilities, same)
-            return len_check
+            hold_p1_absolutes = [i+1 for i in range(self.sz)]
+            hold_p2_absolutes = [i+1 for i in range(self.sz)]
+            counts = [Counter(x) for x in same]
+            for i in range(self.sz):
+                b1 = b2 = True
+                for c in counts:
+                    if not b1 and not b2:
+                        break
+                    if b1 and (not c[i+1] == self.p1_range or i+1 in self.p1_absolutes):
+                        hold_p1_absolutes.remove(i+1)
+                        b1 = False
+                    if b2 and (not c[i+1] == self.p2_range or i+1 in self.p2_absolutes):
+                        hold_p2_absolutes.remove(i+1)
+                        b2 = False
+
+            return len_check, hold_p1_absolutes,hold_p2_absolutes
         else:
-            return [False]*len(self.positions)
+            return [False]*len(self.positions), [],[]
 
     def are_values_valid_relative_to_each_other(self, values):
         index_pairs = set(itertools.combinations([x for x in range(len(self.positions))], 2))
@@ -191,6 +228,9 @@ class Block:
                 if values[i1] == values[i2]:
                     return False
         return True
+
+    def does_same_contain_actual_value(self, same):
+        return any([t == tuple(self.numbers) for t in same])
 
     """
     Setters

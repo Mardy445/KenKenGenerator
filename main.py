@@ -1,7 +1,6 @@
 from generate_number_grid import KenKenGrid
-from generate_segemented_grid_map import RandomGridSegmentation
 from custom_tile import TileFrame
-from kenken_generation import KenKenGenerator
+from kenken_generation_by_blocks import KenKenGenerationBlockByBlock
 import tkinter as tk
 import random
 
@@ -15,6 +14,7 @@ class TkinterGrid:
         root.bind('<Right>', self.right)
         root.bind('<Up>', self.up)
         root.bind('<Down>', self.down)
+        root.bind('<BackSpace>', self.back)
         for i in range(6):
             root.bind(str(i+1), self.number_handler)
 
@@ -30,6 +30,9 @@ class TkinterGrid:
     def down(self,event):
         self.move_current((0,1))
 
+    def back(self,event):
+        grid[self.current[0]][self.current[1]].set_number("")
+
     def number_handler(self,event):
         grid[self.current[0]][self.current[1]].set_number(event.char)
 
@@ -41,22 +44,15 @@ class TkinterGrid:
 
 if __name__ == '__main__':
 
-    size = 4
-    random.seed(14)
+    size = 6
+    #random.seed(15)
     number_grid_generator = KenKenGrid(size)
     number_grid_generator.generate_random_grid()
     n_grid = number_grid_generator.grid
 
-    grid_map_generator = RandomGridSegmentation(size)
-
-    main_generator = None
-    usable_node = None
-    while usable_node is None:
-        grid_map_generator.segment_grid()
-        main_generator = KenKenGenerator(size, n_grid, grid_map_generator.blocks)
-        usable_node = main_generator.begin_generation()
-
-    border_code, sign_values = main_generator.convert_blocks_to_border_maps_and_sign_values(usable_node.complete_blocks)
+    main_generator = KenKenGenerationBlockByBlock(size,n_grid)
+    main_generator.generate_kenken_grid()
+    border_code, sign_values = main_generator.convert_blocks_to_border_maps_and_sign_values()
 
     grid = []
 
@@ -71,3 +67,4 @@ if __name__ == '__main__':
 
     TkinterGrid(grid,root,size)
     root.mainloop()
+
