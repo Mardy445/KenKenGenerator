@@ -7,6 +7,23 @@ This file contains the code to randomly segment a sz*sz square into a number of 
 """
 
 
+def get_empty_grid_of_zeroes(sz):
+    init_grid = []
+    hold = [0] * sz
+    for i in range(sz):
+        init_grid.append(hold.copy())
+    return init_grid
+
+def get_empty_grid_of_lists(sz):
+    init_reserved_values = []
+    hold = []
+    for i in range(sz):
+        hold.append([])
+    for i in range(sz):
+        init_reserved_values.append(copy.deepcopy(hold))
+    return init_reserved_values
+
+
 class KenKenGenerationBlockByBlock:
     current_attempts = 0
 
@@ -14,29 +31,15 @@ class KenKenGenerationBlockByBlock:
         self.sz = sz
         self.number_grid = number_grid
 
-        init_grid = []
-        hold = [0] * sz
-        for i in range(sz):
-            init_grid.append(hold.copy())
-
-        init_reserved_values_p1 = []
-        init_reserved_values_p2 = []
-        hold = []
-        for i in range(sz):
-            hold.append([])
-        for i in range(sz):
-            init_reserved_values_p1.append(copy.deepcopy(hold))
-            init_reserved_values_p2.append(copy.deepcopy(hold))
-
         init_available_positions = []
         for x in range(self.sz):
             for y in range(self.sz):
                 init_available_positions.append((x, y))
         random.shuffle(init_available_positions)
 
-        self.current_grid = init_grid
-        self.reserved_values_grid_p1 = init_reserved_values_p1
-        self.reserved_values_grid_p2 = init_reserved_values_p2
+        self.current_grid = get_empty_grid_of_zeroes(sz)
+        self.reserved_values_grid_p1 = get_empty_grid_of_lists(sz)
+        self.reserved_values_grid_p2 = copy.deepcopy(self.reserved_values_grid_p1)
         self.available_positions = init_available_positions
         self.blocks = []
 
@@ -75,7 +78,7 @@ class KenKenGenerationBlockByBlock:
     def generate_random_block(self, available_positions):
         block_init_pos = available_positions[random.randint(0, len(available_positions) - 1)]
         block = Block(block_init_pos, self.number_grid[block_init_pos[0]][block_init_pos[1]],self.sz)
-        if self.current_attempts == 20:
+        if self.current_attempts == 5:
             self.current_attempts = 0
             return block
 
@@ -87,7 +90,7 @@ class KenKenGenerationBlockByBlock:
             if pos is not None:
                 block.add_new_tile(pos, self.number_grid[pos[0]][pos[1]])
                 r = random.uniform(0, 1)
-                f = (0.5)
+                f = (1 / (len(block.positions) + 0.01))
             else:
                 break
         return block
