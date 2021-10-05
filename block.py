@@ -214,14 +214,14 @@ class Block:
 
         return tile_number_possibilities, same
 
-    def get_tile_unique_boolean_values(self, grid, reserved_values_p1, reserved_values_p2, solving=False):
+    def get_tile_unique_boolean_values(self, grid, reserved_values_p1, reserved_values_p2, solving=False, multiple_paths=False):
         if len(self.positions) == 1:
-            return list([self.value]), [], []
+            return [self.value], [], []
 
         tile_number_possibilities, same = self.calculate_all_possible_sets(grid, reserved_values_p1, reserved_values_p2)
         contains_actual_value = self.does_same_contain_actual_value(same)
 
-        if len(same) == 1 and (contains_actual_value or solving):
+        if (len(same) == 1 and (contains_actual_value or solving)) or multiple_paths:
             return list(same[0]), [], []
         elif len(same) > 1 and (contains_actual_value or solving):
             len_check = [
@@ -241,8 +241,7 @@ class Block:
                     if b2 and (not c[i + 1] == self.p2_range or i + 1 in self.p2_absolutes):
                         hold_p2_absolutes.remove(i + 1)
                         b2 = False
-
-            return [tile_number_possibilities[i] if len_check[i] else 0 for i in range(len(len_check))], hold_p1_absolutes, hold_p2_absolutes
+            return [tile_number_possibilities[i][0] if len_check[i] else 0 for i in range(len(len_check))], hold_p1_absolutes, hold_p2_absolutes
         else:
             return [0] * len(self.positions), [], []
 

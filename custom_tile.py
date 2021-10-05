@@ -20,9 +20,9 @@ class TileFrame(tk.Frame):
         if "s" in self.border_code:
             south = 3
 
-        self.l1 = tk.Label(self, text=value_sign, bg="white", anchor="nw", width=10, height=1)
-        self.l2 = tk.Label(self, text=number, bg="white", fg="blue", anchor="center", width=10, height=3)
-        self.l3 = tk.Label(self, text="", bg="white", fg="red", anchor="w", width=10, height=1)
+        self.l1 = tk.Label(self, text=value_sign, bg="white", anchor="nw", width=8, height=1)
+        self.l2 = tk.Label(self, text=number, bg="white", fg="blue", anchor="center", width=8, height=2)
+        self.l3 = tk.Label(self, text="", bg="white", fg="red", anchor="w", width=8, height=1)
 
         self.grid_rowconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=3)

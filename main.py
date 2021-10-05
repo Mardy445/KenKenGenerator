@@ -52,23 +52,27 @@ class TkinterGrid:
         reserved_values_grid_p1 = get_empty_grid_of_lists(self.sz)
         reserved_values_grid_p2 = copy.deepcopy(reserved_values_grid_p1)
         blocks = main_generator.blocks
+        random.shuffle(blocks)
         for block in blocks:
             block.complete = False
             block.p1_absolutes = []
             block.p2_absolutes = []
         self.unbind_events()
-        root.after(500, self.take_one_solve_game_step, current_grid, reserved_values_grid_p1, reserved_values_grid_p2,
-                   blocks, 0)
+        root.after(100, self.take_one_solve_game_step, current_grid, reserved_values_grid_p1, reserved_values_grid_p2,
+                   blocks)
 
-    def take_one_solve_game_step(self, current_grid, reserved_values_grid_p1, reserved_values_grid_p2, blocks, index):
+    def take_one_solve_game_step(self, current_grid, reserved_values_grid_p1, reserved_values_grid_p2, blocks, index=0, single_step_taken=False, multiple_paths_exist=False):
         block = blocks[index]
         is_block_init_complete = block.complete
         if not is_block_init_complete:
             self.unfocus_all()
             unique_value_list, hold_p1_absolutes, hold_p2_absolutes = block.get_tile_unique_boolean_values(
-                current_grid, reserved_values_grid_p1, reserved_values_grid_p2, True)
+                current_grid, reserved_values_grid_p1, reserved_values_grid_p2, True, multiple_paths_exist)
             if all(unique_value_list):
                 block.complete = True
+            if any(unique_value_list) or len(hold_p1_absolutes) > 0 or len(hold_p2_absolutes) > 0:
+                single_step_taken = True
+                multiple_paths_exist = False
             for i, pos in enumerate(block.positions):
                 self.grid[pos[1]][pos[0]].focus()
                 v = unique_value_list[i]
@@ -81,11 +85,16 @@ class TkinterGrid:
                 block.p2_absolutes.extend(hold_p2_absolutes)
                 self.grid[pos[1]][pos[0]].add_numbers_to_possibilities_list(reserved_values_grid_p1[pos[0]][pos[1]])
                 self.grid[pos[1]][pos[0]].add_numbers_to_possibilities_list(reserved_values_grid_p2[pos[0]][pos[1]])
-        index = (index + 1) % len(blocks)
+        new_index = (index + 1) % len(blocks)
+        if new_index <= index:
+            if not single_step_taken:
+                multiple_paths_exist = True
+            single_step_taken = False
+
 
         if is_zero_in_grid(current_grid):
-            root.after(200 if not is_block_init_complete else 0, self.take_one_solve_game_step, current_grid, reserved_values_grid_p1,
-                       reserved_values_grid_p2, blocks, index)
+            root.after(100 if not is_block_init_complete else 0, self.take_one_solve_game_step, current_grid, reserved_values_grid_p1,
+                       reserved_values_grid_p2, blocks, new_index, single_step_taken, multiple_paths_exist)
         else:
             self.unfocus_all()
             self.bind_events()
@@ -136,8 +145,8 @@ class TkinterGrid:
 
 if __name__ == '__main__':
 
-    size = 10
-    random.seed(16)
+    size = 6
+    #random.seed(16)
     number_grid_generator = KenKenGrid(size)
     number_grid_generator.generate_random_grid()
     n_grid = number_grid_generator.grid
