@@ -1,4 +1,5 @@
 import tkinter as tk
+import random
 
 """
 This file contains a custom Tkinter Frame for KenKen display purposes
@@ -6,9 +7,8 @@ This file contains a custom Tkinter Frame for KenKen display purposes
 
 
 class TileFrame(tk.Frame):
-    possibilities_list = []
-
     def __init__(self, root, border_code, value_sign="", number=""):
+        self.possibilities_list = []
         tk.Frame.__init__(self, root)
         self["bg"] = "black"
         self.border_code = border_code
@@ -51,14 +51,29 @@ class TileFrame(tk.Frame):
     def add_number_to_possibilities_list(self, number):
         if number not in self.possibilities_list:
             self.possibilities_list.append(number)
-            string = ""
-            for n in self.possibilities_list:
-                string = string + ("" if string == "" else ",") + n
-            self.l3["text"] = string
+        self.rewrite_possibilities_list()
+
+    def add_numbers_to_possibilities_list(self, numbers):
+        for number in numbers:
+            if number not in self.possibilities_list:
+                self.possibilities_list.append(number)
+        self.rewrite_possibilities_list()
+
+    def rewrite_possibilities_list(self):
+        self.possibilities_list.sort()
+        string = ""
+        for n in self.possibilities_list:
+            string = string + ("" if string == "" else ",") + str(n)
+        self.l3["text"] = string
 
     def clear_possibilities_list(self):
         self.possibilities_list = []
         self.l3["text"] = ""
+
+    def pop_from_possibilities_list(self):
+        if len(self.possibilities_list) > 0:
+            self.possibilities_list.pop()
+            self.rewrite_possibilities_list()
 
     def reset(self):
         self.clear_possibilities_list()

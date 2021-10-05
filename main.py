@@ -3,6 +3,7 @@ from custom_tile import TileFrame
 from kenken_generation_by_blocks import KenKenGenerationBlockByBlock, get_empty_grid_of_lists, get_empty_grid_of_zeroes
 import tkinter as tk
 import copy
+import random
 
 def is_zero_in_grid(grid):
     for row in grid:
@@ -11,6 +12,7 @@ def is_zero_in_grid(grid):
     return False
 
 class TkinterGrid:
+    shift_mode = False
     def __init__(self, grid, root, sz):
         self.grid = grid
         self.sz = sz
@@ -20,20 +22,46 @@ class TkinterGrid:
         root.bind('<Up>', self.up)
         root.bind('<Down>', self.down)
         root.bind('<BackSpace>', self.back)
+        root.bind('<Shift-KeyPress-BackSpace>', self.back_shift)
         root.bind('<space>',self.solve_game)
+
         for i in range(6):
-            root.bind(str(i+1), self.number_handler)
+            root.bind(f"<KeyPress-{str(i + 1)}>", self.number_handler)
+        root.bind(f"<Shift-Key>", self.number_handler_shift)
+
 
     def solve_game(self, event):
         self.reset_all()
-        grid = get_empty_grid_of_zeroes(self.sz)
+        current_grid = get_empty_grid_of_zeroes(self.sz)
         reserved_values_grid_p1 = get_empty_grid_of_lists(self.sz)
         reserved_values_grid_p2 = copy.deepcopy(reserved_values_grid_p1)
         blocks = main_generator.blocks
-        i = 0
-        while is_zero_in_grid(grid):
-            unique_bool_array, hold_p1_absolutes, hold_p2_absolutes = blocks[i].get_tile_unique_boolean_values(
-                grid,reserved_values_grid_p1,reserved_values_grid_p2)
+        for block in blocks:
+            block.complete = False
+            block.p1_absolutes = []
+            block.p2_absolutes = []
+        index = 0
+        while is_zero_in_grid(current_grid):
+            block = blocks[index]
+            if not block.complete:
+                unique_value_list, hold_p1_absolutes, hold_p2_absolutes = block.get_tile_unique_boolean_values(
+                    current_grid,reserved_values_grid_p1,reserved_values_grid_p2)
+                if all(unique_value_list):
+                    block.complete = True
+                for i, pos in enumerate(block.positions):
+                    v = unique_value_list[i]
+                    if v:
+                        current_grid[pos[0]][pos[1]] = v
+                        self.grid[pos[0]][pos[1]].set_number(v)
+                    reserved_values_grid_p1[pos[0]][pos[1]].extend(hold_p1_absolutes)
+                    reserved_values_grid_p2[pos[0]][pos[1]].extend(hold_p2_absolutes)
+                    block.p1_absolutes.extend(hold_p1_absolutes)
+                    block.p2_absolutes.extend(hold_p2_absolutes)
+                    self.grid[pos[0]][pos[1]].add_numbers_to_possibilities_list(reserved_values_grid_p1[pos[0]][pos[1]])
+                    self.grid[pos[0]][pos[1]].add_numbers_to_possibilities_list(reserved_values_grid_p2[pos[0]][pos[1]])
+            index = (index + 1) % len(blocks)
+
+
 
 
     def left(self,event):
@@ -51,8 +79,18 @@ class TkinterGrid:
     def back(self,event):
         grid[self.current[0]][self.current[1]].set_number("")
 
+    def back_shift(self,event):
+        grid[self.current[0]][self.current[1]].pop_from_possibilities_list()
+
     def number_handler(self,event):
         grid[self.current[0]][self.current[1]].set_number(event.char)
+
+    def number_handler_shift(self, event):
+        keys = ['!','"','£','$','%','^']
+        if event.char not in keys:
+            return
+        number = keys.index(event.char) + 1
+        grid[self.current[0]][self.current[1]].add_number_to_possibilities_list(number)
 
     def move_current(self, next_pos):
         grid[self.current[0]][self.current[1]].unfocus()
@@ -68,7 +106,7 @@ class TkinterGrid:
 if __name__ == '__main__':
 
     size = 6
-    #random.seed(15)
+    random.seed(15)
     number_grid_generator = KenKenGrid(size)
     number_grid_generator.generate_random_grid()
     n_grid = number_grid_generator.grid
