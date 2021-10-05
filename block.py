@@ -26,10 +26,20 @@ class Block:
         self.numbers = []
         self.positions = []
         self.positions.append(init)
+        self.top_left_position = init
         self.numbers.append(init_number)
         self.sz = sz
         self.p1_absolutes = []
         self.p2_absolutes = []
+
+    def get_top_left_most_position(self):
+        hold_positions = copy.copy(self.positions)
+        hold_positions.sort(key=lambda y: y[0])
+        highest_p1 = hold_positions[0][0]
+        hold_positions = [p for p in hold_positions if p[0] == highest_p1]
+        hold_positions.sort(key=lambda y: y[1])
+        return hold_positions[0]
+
 
     """
     Appends a new position to the block
@@ -40,6 +50,7 @@ class Block:
         self.p1_range = len({p[0] for p in self.positions})
         self.p2_range = len({p[1] for p in self.positions})
         self.numbers.append(number)
+        self.top_left_position = self.get_top_left_most_position()
 
     """
     Returns an available neighbouring position.
@@ -203,16 +214,16 @@ class Block:
 
         return tile_number_possibilities, same
 
-    def get_tile_unique_boolean_values(self, grid, reserved_values_p1, reserved_values_p2):
+    def get_tile_unique_boolean_values(self, grid, reserved_values_p1, reserved_values_p2, solving=False):
         if len(self.positions) == 1:
             return list([self.value]), [], []
 
         tile_number_possibilities, same = self.calculate_all_possible_sets(grid, reserved_values_p1, reserved_values_p2)
         contains_actual_value = self.does_same_contain_actual_value(same)
 
-        if len(same) == 1 and contains_actual_value:
+        if len(same) == 1 and (contains_actual_value or solving):
             return list(same[0]), [], []
-        elif len(same) > 1 and contains_actual_value:
+        elif len(same) > 1 and (contains_actual_value or solving):
             len_check = [
                 len(tile_number_possibilities[i]) == 1 and grid[self.positions[i][0]][self.positions[i][1]] == 0 for i
                 in range(len(tile_number_possibilities))]

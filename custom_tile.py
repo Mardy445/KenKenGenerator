@@ -36,9 +36,9 @@ class TileFrame(tk.Frame):
         self.grid(row=r, column=c)
 
     def focus(self):
-        self.l1["bg"] = "grey"
-        self.l2["bg"] = "grey"
-        self.l3["bg"] = "grey"
+        self.l1["bg"] = "light grey"
+        self.l2["bg"] = "light grey"
+        self.l3["bg"] = "light grey"
 
     def unfocus(self):
         self.l1["bg"] = "white"

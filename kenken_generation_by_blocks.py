@@ -128,16 +128,14 @@ class KenKenGenerationBlockByBlock:
             sign_values.append(hold.copy())
 
         for i, block in enumerate(self.blocks):
-            positions = copy.copy(block.positions)
-            positions.sort(key=lambda y: y[0])
-            sign_values[positions[0][0]][positions[0][1]] = (
+            sign_values[block.top_left_position[0]][block.top_left_position[1]] = (
                                                                             block.sign if block.sign is not None else "") + str(
                 int(block.value))
 
-            for pos in positions:
-                if (pos[0], pos[1] + 1) not in positions and pos[1] + 1 < self.sz:
+            for pos in block.positions:
+                if (pos[0], pos[1] + 1) not in block.positions and pos[1] + 1 < self.sz:
                     border_maps[pos[0]][pos[1]] += "e"
-                if (pos[0] + 1, pos[1]) not in positions and pos[0] + 1 < self.sz:
+                if (pos[0] + 1, pos[1]) not in block.positions and pos[0] + 1 < self.sz:
                     border_maps[pos[0]][pos[1]] += "s"
 
         return border_maps, sign_values
