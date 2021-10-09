@@ -20,9 +20,9 @@ class TileFrame(tk.Frame):
         if "s" in self.border_code:
             south = 3
 
-        self.l1 = tk.Label(self, text=value_sign, bg="white", anchor="nw", width=8, height=1)
-        self.l2 = tk.Label(self, text=number, bg="white", fg="blue", anchor="center", width=8, height=2)
-        self.l3 = tk.Label(self, text="", bg="white", fg="red", anchor="w", width=8, height=1)
+        self.l1 = tk.Label(self, text=value_sign, bg="white", anchor="nw", width=6, height=1)
+        self.l2 = tk.Label(self, text=number, bg="white", fg="blue", anchor="center", width=6, height=1)
+        self.l3 = tk.Label(self, text="", bg="white", fg="red", anchor="w", width=6, height=1)
 
         self.grid_rowconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=3)
@@ -31,9 +31,6 @@ class TileFrame(tk.Frame):
         self.l1.grid(row=0, column=0, padx=(0, east), sticky="nw")
         self.l2.grid(row=1, column=0, padx=(0, east), sticky="nw")
         self.l3.grid(row=2, column=0, padx=(0, east), pady=(0, south), sticky="nw")
-
-    def position_in_grid(self, r, c):
-        self.grid(row=r, column=c)
 
     def focus(self):
         self.l1["bg"] = "light grey"

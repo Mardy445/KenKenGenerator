@@ -51,8 +51,8 @@ class KenKenGenerationBlockByBlock:
                 self.generate_new_node(block,[True],[],[])
                 continue
 
-            signs = ["+", "-", "*", "/"]
-            random.shuffle(signs)
+            signs = ["/", "-", "+", "*"]
+            #random.shuffle(signs)
             for sign in signs:
                 if sign == "+":
                     block.calculate_plus(self.number_grid)

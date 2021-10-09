@@ -221,7 +221,7 @@ class Block:
         tile_number_possibilities, same = self.calculate_all_possible_sets(grid, reserved_values_p1, reserved_values_p2)
         contains_actual_value = self.does_same_contain_actual_value(same)
 
-        if (len(same) == 1 and (contains_actual_value or solving)) or multiple_paths:
+        if (len(same) == 1 and (contains_actual_value or solving)) or (len(same) > 0 and multiple_paths):
             return list(same[0]), [], []
         elif len(same) > 1 and (contains_actual_value or solving):
             len_check = [
@@ -276,7 +276,11 @@ class Block:
         if len(tile_number_possibilities) == 0 or len(possible_sets) == 0:
             return []
         hold = []
-        combine = list(itertools.product(tile_number_possibilities, possible_sets))
+        try:
+            combine = list(itertools.product(tile_number_possibilities, possible_sets))
+        except MemoryError:
+            return set([])
+
         for a, b in combine:
             status = True
             for v in a:

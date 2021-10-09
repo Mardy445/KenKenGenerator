@@ -58,10 +58,11 @@ class TkinterGrid:
             block.p1_absolutes = []
             block.p2_absolutes = []
         self.unbind_events()
-        root.after(100, self.take_one_solve_game_step, current_grid, reserved_values_grid_p1, reserved_values_grid_p2,
+        root.after(0, self.take_one_solve_game_step, current_grid, reserved_values_grid_p1, reserved_values_grid_p2,
                    blocks)
 
-    def take_one_solve_game_step(self, current_grid, reserved_values_grid_p1, reserved_values_grid_p2, blocks, index=0, single_step_taken=False, multiple_paths_exist=False):
+    def take_one_solve_game_step(self, current_grid, reserved_values_grid_p1, reserved_values_grid_p2, blocks, index=0,
+                                 single_step_taken=False, multiple_paths_exist=False):
         block = blocks[index]
         is_block_init_complete = block.complete
         if not is_block_init_complete:
@@ -85,19 +86,31 @@ class TkinterGrid:
                 block.p2_absolutes.extend(hold_p2_absolutes)
                 self.grid[pos[1]][pos[0]].add_numbers_to_possibilities_list(reserved_values_grid_p1[pos[0]][pos[1]])
                 self.grid[pos[1]][pos[0]].add_numbers_to_possibilities_list(reserved_values_grid_p2[pos[0]][pos[1]])
+            self.log(block, unique_value_list, hold_p1_absolutes, hold_p2_absolutes)
         new_index = (index + 1) % len(blocks)
         if new_index <= index:
             if not single_step_taken:
                 multiple_paths_exist = True
             single_step_taken = False
 
-
         if is_zero_in_grid(current_grid):
-            root.after(100 if not is_block_init_complete else 0, self.take_one_solve_game_step, current_grid, reserved_values_grid_p1,
+            root.after(500 if not is_block_init_complete else 0, self.take_one_solve_game_step, current_grid,
+                       reserved_values_grid_p1,
                        reserved_values_grid_p2, blocks, new_index, single_step_taken, multiple_paths_exist)
         else:
             self.unfocus_all()
             self.bind_events()
+
+    def log(self, block, values, reserved_values_p1, reserved_values_p2):
+        reserved_values_p1.extend(reserved_values_p2)
+        reserved_values = set(reserved_values_p1)
+        block = f"Block {'' if block.sign is None else block.sign}{block.value} {block.top_left_position}"
+        if any(values):
+            text_list.insert("end",f"{block} contains {[v for v in values if not v == 0]} in known tiles")
+        if len(reserved_values) > 0:
+            text_list.insert("end",f"{block} contains {reserved_values} in unknown tiles")
+        if not any(values) and len(reserved_values) == 0:
+            text_list.insert("end", f"No useful information from {block} as of yet")
 
     def left(self, event):
         self.move_current((-1, 0))
@@ -146,10 +159,15 @@ class TkinterGrid:
 if __name__ == '__main__':
 
     size = 6
-    #random.seed(16)
+    #seed = random.randint(0,100000)
+    random.seed(92971)
+    #print(seed)
+
     number_grid_generator = KenKenGrid(size)
-    number_grid_generator.generate_random_grid()
-    n_grid = number_grid_generator.grid
+    n_grid = None
+    while n_grid is None:
+        n_grid = number_grid_generator.generate_random_grid()
+
 
     main_generator = KenKenGenerationBlockByBlock(size, n_grid)
     main_generator.generate_kenken_grid()
@@ -157,15 +175,17 @@ if __name__ == '__main__':
 
     grid = []
     root = tk.Tk()
+    right_panel = tk.Frame(root)
+    right_panel.grid(row=0,column=size,rowspan=size)
+    text_list = tk.Listbox(right_panel,height=3*size, width=45)
+    text_list.grid(row=0)
 
-    # root.rowconfigure(tuple(range(size)), weight=1)
-    # root.columnconfigure(tuple(range(size)), weight=1)
 
     for c in range(size):
         hold = []
         for r in range(size):
             frame = TileFrame(root, border_code[r][c], sign_values[r][c], "")
-            frame.position_in_grid(r, c)
+            frame.grid(row=r, column=c)
             hold.append(frame)
         grid.append(hold)
 

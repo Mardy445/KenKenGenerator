@@ -31,15 +31,14 @@ class KenKenGrid:
     """
 
     def generate_random_grid(self):
-        while True:
+        while len(self.stack) > 0:
             # Peeks at the top node
             node = self.stack[len(self.stack) - 1]
 
             # If the nodes current position variable is None, this means the node has successfully inserted a value
             # at every point on the grid.
             if node.position is None:
-                self.grid = node.grid
-                return
+                return node.grid
 
             # Calls a method on the top level node to see if any values can possibly be placed at the current position
             next_value = node.pop_possible_value()
@@ -51,6 +50,7 @@ class KenKenGrid:
                 hold_grid = node.grid.copy()
                 hold_grid[node.position[0]][node.position[1]] = next_value
                 self.stack.append(NumberGridGenerationBackTrackNode(hold_grid,  self.sz, node.get_appended_position()))
+        return None
 
 
 """
