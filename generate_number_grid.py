@@ -1,5 +1,4 @@
 import random
-import tkinter
 
 """
 This file contains the class used for generation of a grid of numbers such that
@@ -108,17 +107,3 @@ class NumberGridGenerationBackTrackNode:
             return self.possible_values.pop()
         else:
             return None
-
-
-"""
-The code below was used for testing solely the number grid generation functionality
-"""
-if __name__ == '__main__':
-    size = 8
-    kkgrid = KenKenGrid(size,size)
-    kkgrid.generate_random_grid()
-    root = tkinter.Tk()
-    for c in range(size):
-        for r in range(size):
-            tkinter.Button(root, width=10, height=5, text=kkgrid.grid[r][c], bg="white").grid(row=r, column=c)
-    root.mainloop()

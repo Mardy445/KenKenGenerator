@@ -1,6 +1,4 @@
 import tkinter as tk
-import random
-
 """
 This file contains a custom Tkinter Frame for KenKen display purposes
 """

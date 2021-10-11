@@ -5,21 +5,36 @@ import copy
 
 """
 This file contains the Block object which represents each block of the KenKen board.
-It generates blocks by attempting to add a neighbouring position to it at each iteration
+Overall, the majority of the complexity is in this file
+Block objects are used in generation and solving problems
 """
 
 
 class Block:
+    # A list of all positions this block takes up
     positions = []
+    # The current sign of the block arithmetic of the block (+,-,*,/ or None if block has only 1 tile)
     sign = None
+    # The current value of the block (IE apply the sign to all the tile values and get this result)
     value = 0
+
+    # The actual numbers in this block. Used for generation only
     numbers = []
 
+    # The range of position 1 values taken up by the block(IE the "height" of the block)
     p1_range = 1
+    # The range of position 2 values taken up by the block(IE the "width" of the block)
     p2_range = 1
+
+    # A grid of lists where each list element contains reserved values along the p1 axis
+    # For example, if a vertical line block of p1 contains the values 1 and 2, but the order is unknown,
+    # these values can be put in p1_absolutes at the tile positions to indicate to tiles in the same p1 column
+    # that it will not be possible for them to use 1 or 2 (since that would break the conditions of KenKen)
     p1_absolutes = []
+    # Same as above but for p2 axis
     p2_absolutes = []
 
+    # If every tile in the block is full, complete is true
     complete = False
 
     def __init__(self, init, init_number, sz):
@@ -32,6 +47,10 @@ class Block:
         self.p1_absolutes = []
         self.p2_absolutes = []
 
+    """
+    Returns the top left most position from all the positions.
+    This is the tile where the icon (e.g +5) will reside
+    """
     def get_top_left_most_position(self):
         hold_positions = copy.copy(self.positions)
         hold_positions.sort(key=lambda y: y[0])
@@ -40,11 +59,9 @@ class Block:
         hold_positions.sort(key=lambda y: y[1])
         return hold_positions[0]
 
-
     """
     Appends a new position to the block
     """
-
     def add_new_tile(self, pos, number):
         self.positions.append(pos)
         self.p1_range = len({p[0] for p in self.positions})
@@ -56,7 +73,6 @@ class Block:
     Returns an available neighbouring position.
     Returns None if not possible
     """
-
     def get_possible_next_position(self, available_positions):
         random.shuffle(self.positions)
         directions = [(0, 1), (0, -1), (1, 0), (-1, 0)]
@@ -75,7 +91,6 @@ class Block:
     """
     Calculates the value of the block if the plus sign was assigned to this block
     """
-
     def calculate_plus(self, number_grid):
         if len(self.positions) == 1:
             return None
@@ -90,7 +105,6 @@ class Block:
     """
     Calculates the value of the block if the multiplication sign was assigned to this block
     """
-
     def calculate_multiply(self, number_grid):
         if len(self.positions) == 1:
             return None
@@ -105,7 +119,6 @@ class Block:
     """
     Calculates the value of the block if the minus sign was assigned to this block
     """
-
     def calculate_minus(self, number_grid):
         if len(self.positions) == 1:
             return None
@@ -130,7 +143,6 @@ class Block:
     """
     Calculates the value of the block if the divide sign was assigned to this block
     """
-
     def calculate_divide(self, number_grid):
         if len(self.positions) != 2:
             return None
@@ -148,8 +160,11 @@ class Block:
 
     """
     Calculates and returns all possible permutations for the block given the board
+    This is done by calculating all possible numbers for each tile based on the rest of the grid.
+    Then the possible combinations of values that could produce the correct value of calculated.
+    Finally, find the effective intersection of these 2 collections to produce a collection of all possible
+    lists of values that could be put into this block. 
     """
-
     def calculate_all_possible_sets(self, grid, reserved_values_p1, reserved_values_p2):
         if self.sign is None:
             return [[self.value]], [(self.value)]
@@ -214,7 +229,18 @@ class Block:
 
         return tile_number_possibilities, same
 
-    def get_tile_unique_boolean_values(self, grid, reserved_values_p1, reserved_values_p2, solving=False, multiple_paths=False):
+    """
+    Given the current grid information in the forms of the grid and the reserved value grids,
+    Return...
+    
+    Return 1: A list of length len(positions) where each value is either a number that has been determined to 
+    be in position i, or 0 if no number can be determined yet for position i
+    
+    Return 2: A list of length len(positions) where each element is a list of values that WILL be in this p1 column
+    
+    Return 3: A list of length len(positions) where each element is a list of values that WILL be in this p2 row
+    """
+    def get_block_information(self, grid, reserved_values_p1, reserved_values_p2, solving=False, multiple_paths=False):
         if len(self.positions) == 1:
             return [self.value], [], []
 
@@ -245,6 +271,10 @@ class Block:
         else:
             return [0] * len(self.positions), [], []
 
+    """
+    Given a list of values for all positions in this block,
+    is this list of values valid such that no 2 values in the list that are the same will be in the same row or column
+    """
     def are_values_valid_relative_to_each_other(self, values):
         index_pairs = set(itertools.combinations([x for x in range(len(self.positions))], 2))
         for i1, i2 in index_pairs:
@@ -253,6 +283,10 @@ class Block:
                     return False
         return True
 
+    """
+    Checks that the "actual" solution to the block exists in the list of calculated solutions.
+    This is only used in generation.
+    """
     def does_same_contain_actual_value(self, same):
         return any([t == tuple(self.numbers) for t in same])
 

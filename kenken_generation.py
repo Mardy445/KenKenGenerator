@@ -1,12 +1,19 @@
 import copy
 import random
 from block import Block
+MAX_ATTEMPTS = 5
 
 """
-This file contains the code to randomly segment a sz*sz square into a number of Blocks 
+This is the main file for generation the grid.
+It works by iteratively randomly generating blocks.
+Each block generated is checked to see if its addition contributes any useful information to solving the game.
+If it does contribute useful information, keep the block, otherwise discard it.
+By generating the game this way, it can be certain that a path to a solution exists. 
 """
 
-
+"""
+Generates an initial grid of zeroes
+"""
 def get_empty_grid_of_zeroes(sz):
     init_grid = []
     hold = [0] * sz
@@ -14,6 +21,10 @@ def get_empty_grid_of_zeroes(sz):
         init_grid.append(hold.copy())
     return init_grid
 
+
+"""
+Generates an initial grid of lists
+"""
 def get_empty_grid_of_lists(sz):
     init_reserved_values = []
     hold = []
@@ -25,6 +36,7 @@ def get_empty_grid_of_lists(sz):
 
 
 class KenKenGenerationBlockByBlock:
+    # Counts how many blocks have been generated since the last block was added
     current_attempts = 0
 
     def __init__(self, sz, number_grid):
@@ -43,14 +55,23 @@ class KenKenGenerationBlockByBlock:
         self.available_positions = init_available_positions
         self.blocks = []
 
+    """
+    The primary iteration function to generate the grid
+    """
     def generate_kenken_grid(self):
+        # While not every tile exists in a block
         while len(self.available_positions) > 0:
             block = self.generate_random_block(self.available_positions)
+
+            # If the new block is a single tile, then no further calculations are needed,
+            # since a single tile block will ALWAYS provide information on its exact value
             if (len(block.positions) == 1):
                 block.set_value(self.number_grid[block.positions[0][0]][block.positions[0][1]])
-                self.generate_new_node(block,[True],[],[])
+                self.update_all_information_grids(block, [True], [], [])
                 continue
 
+            # The signs are checked in this order, from least likely to be provide information to most likely
+            # This is done to avoid a grid of mostly multiplication signs to be generated
             signs = ["/", "-", "+", "*"]
             #random.shuffle(signs)
             for sign in signs:
@@ -63,10 +84,12 @@ class KenKenGenerationBlockByBlock:
                 elif sign == "/":
                     block.calculate_divide(self.number_grid)
                 if block.sign is not None:
-                    unique_bool_array, hold_p1_absolutes, hold_p2_absolutes = block.get_tile_unique_boolean_values(
+                    unique_bool_array, hold_p1_absolutes, hold_p2_absolutes = block.get_block_information(
                         self.current_grid, self.reserved_values_grid_p1, self.reserved_values_grid_p2)
+                    # If any of the blocks tiles can be determined, or the block can reserve values for any of the rows or columns,
+                    # keep the block
                     if any(unique_bool_array) or len(hold_p1_absolutes) > 0 or len(hold_p2_absolutes) > 0:
-                        self.generate_new_node(block, unique_bool_array, hold_p1_absolutes, hold_p2_absolutes)
+                        self.update_all_information_grids(block, unique_bool_array, hold_p1_absolutes, hold_p2_absolutes)
                         self.current_attempts = 0
                         break
                     else:
@@ -75,10 +98,14 @@ class KenKenGenerationBlockByBlock:
 
     def generate_random_block(self, available_positions):
         block_init_pos = available_positions[random.randint(0, len(available_positions) - 1)]
-        block = Block(block_init_pos, self.number_grid[block_init_pos[0]][block_init_pos[1]],self.sz)
-        if self.current_attempts == 5:
+        block = Block(block_init_pos, self.number_grid[block_init_pos[0]][block_init_pos[1]], self.sz)
+        # If there have been a certain number of failed attempts, return the single tile block
+        if self.current_attempts == MAX_ATTEMPTS:
             self.current_attempts = 0
             return block
+
+        # Otherwise add at least 1 new tile
+        # This is done to avoid a grid of mostly single tiles
 
         r = 0
         f = 1
@@ -93,31 +120,46 @@ class KenKenGenerationBlockByBlock:
                 break
         return block
 
-    def generate_new_node(self, block, unique_bool_array, hold_p1_absolutes, hold_p2_absolutes):
-        self.update_values_given_block(block,unique_bool_array,hold_p1_absolutes,hold_p2_absolutes)
+    """
+    Given the new block and its information, update the main grid and the reserved value grids accordingly
+    for the new block and all existing blocks
+    """
+    def update_all_information_grids(self, block, value_array, hold_p1_absolutes, hold_p2_absolutes):
+        self.update_values_given_block(block, value_array, hold_p1_absolutes, hold_p2_absolutes)
         for pos in block.positions:
             self.available_positions.remove(pos)
 
+        # Once the new blocks changes are added, check all other existing blocks to see if any new information
+        # can be determined
         for hold_block in self.blocks:
             if hold_block.complete:
                 continue
-            u, p1_a, p2_a = hold_block.get_tile_unique_boolean_values(self.current_grid, self.reserved_values_grid_p1, self.reserved_values_grid_p2)
-            self.update_values_given_block(hold_block,u,p1_a,p2_a)
+            u, p1_a, p2_a = hold_block.get_block_information(self.current_grid, self.reserved_values_grid_p1,
+                                                             self.reserved_values_grid_p2)
+            self.update_values_given_block(hold_block, u, p1_a, p2_a)
 
         self.blocks.append(block)
 
-    def update_values_given_block(self,block, unique_bool_array, hold_p1_absolutes, hold_p2_absolutes):
-        if all(unique_bool_array):
+    """
+    Updates the main grid and reserved values grids for a given block
+    """
+    def update_values_given_block(self, block, value_array, hold_p1_absolutes, hold_p2_absolutes):
+        if all(value_array):
             block.complete = True
         for i, pos in enumerate(block.positions):
-            if unique_bool_array[i]:
+            if value_array[i]:
                 self.current_grid[pos[0]][pos[1]] = self.number_grid[pos[0]][pos[1]]
             self.reserved_values_grid_p1[pos[0]][pos[1]].extend(hold_p1_absolutes)
             self.reserved_values_grid_p2[pos[0]][pos[1]].extend(hold_p2_absolutes)
             block.p1_absolutes.extend(hold_p1_absolutes)
             block.p2_absolutes.extend(hold_p2_absolutes)
 
-
+    """
+    Returns the information needed by the GUI to show the grid.
+    border_maps: A grid where each element describes what borders it needs
+    signs_values: A grid where each element represents what to put for the top left corner label. 
+                Either (sign + value) if top left corner of block or "" otherwise.
+    """
     def convert_blocks_to_border_maps_and_sign_values(self):
         border_maps = []
         sign_values = []
@@ -129,7 +171,7 @@ class KenKenGenerationBlockByBlock:
 
         for i, block in enumerate(self.blocks):
             sign_values[block.top_left_position[0]][block.top_left_position[1]] = (
-                                                                            block.sign if block.sign is not None else "") + str(
+                                                                                      block.sign if block.sign is not None else "") + str(
                 int(block.value))
 
             for pos in block.positions:

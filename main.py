@@ -1,10 +1,12 @@
 from generate_number_grid import KenKenGrid
 from custom_tile import TileFrame
-from kenken_generation_by_blocks import KenKenGenerationBlockByBlock, get_empty_grid_of_lists, get_empty_grid_of_zeroes
+from kenken_generation import KenKenGenerationBlockByBlock, get_empty_grid_of_lists, get_empty_grid_of_zeroes
 import tkinter as tk
 import copy
 import random
 
+DELAY_LOWER_BOUND = 50
+DELAY_UPPER_BOUND = 300
 
 def is_zero_in_grid(grid):
     for row in grid:
@@ -20,6 +22,9 @@ class TkinterGrid:
         self.grid = grid
         self.sz = sz
         self.current = (0, 0)
+        self.delay = 300
+        root.bind('f', self.change_delay)
+        grid[0][0].focus()
         self.bind_events()
 
     def bind_events(self):
@@ -53,6 +58,7 @@ class TkinterGrid:
         reserved_values_grid_p2 = copy.deepcopy(reserved_values_grid_p1)
         blocks = main_generator.blocks
         random.shuffle(blocks)
+        text_list.delete(0,'end')
         for block in blocks:
             block.complete = False
             block.p1_absolutes = []
@@ -67,7 +73,7 @@ class TkinterGrid:
         is_block_init_complete = block.complete
         if not is_block_init_complete:
             self.unfocus_all()
-            unique_value_list, hold_p1_absolutes, hold_p2_absolutes = block.get_tile_unique_boolean_values(
+            unique_value_list, hold_p1_absolutes, hold_p2_absolutes = block.get_block_information(
                 current_grid, reserved_values_grid_p1, reserved_values_grid_p2, True, multiple_paths_exist)
             if all(unique_value_list):
                 block.complete = True
@@ -90,11 +96,12 @@ class TkinterGrid:
         new_index = (index + 1) % len(blocks)
         if new_index <= index:
             if not single_step_taken:
+                text_list.insert("end", f"Multiple equally viable paths exist. Take first one")
                 multiple_paths_exist = True
             single_step_taken = False
 
         if is_zero_in_grid(current_grid):
-            root.after(500 if not is_block_init_complete else 0, self.take_one_solve_game_step, current_grid,
+            root.after(self.delay if not is_block_init_complete else 0, self.take_one_solve_game_step, current_grid,
                        reserved_values_grid_p1,
                        reserved_values_grid_p2, blocks, new_index, single_step_taken, multiple_paths_exist)
         else:
@@ -111,6 +118,9 @@ class TkinterGrid:
             text_list.insert("end",f"{block} contains {reserved_values} in unknown tiles")
         if not any(values) and len(reserved_values) == 0:
             text_list.insert("end", f"No useful information from {block} as of yet")
+
+    def change_delay(self, event):
+        self.delay = DELAY_LOWER_BOUND if self.delay == DELAY_UPPER_BOUND else DELAY_UPPER_BOUND
 
     def left(self, event):
         self.move_current((-1, 0))
@@ -157,30 +167,31 @@ class TkinterGrid:
 
 
 if __name__ == '__main__':
+    size = 8
 
-    size = 6
-    #seed = random.randint(0,100000)
-    random.seed(92971)
-    #print(seed)
-
+    # Generates a valid grid of numbers
     number_grid_generator = KenKenGrid(size)
     n_grid = None
     while n_grid is None:
         n_grid = number_grid_generator.generate_random_grid()
 
 
+    # Uses this grid of numbers to generate the kenken grid
     main_generator = KenKenGenerationBlockByBlock(size, n_grid)
     main_generator.generate_kenken_grid()
+
+
+
+    # Gets the information needed by the GUI
     border_code, sign_values = main_generator.convert_blocks_to_border_maps_and_sign_values()
 
+    # Creates the GUI
     grid = []
     root = tk.Tk()
     right_panel = tk.Frame(root)
     right_panel.grid(row=0,column=size,rowspan=size)
     text_list = tk.Listbox(right_panel,height=3*size, width=45)
     text_list.grid(row=0)
-
-
     for c in range(size):
         hold = []
         for r in range(size):
@@ -189,5 +200,6 @@ if __name__ == '__main__':
             hold.append(frame)
         grid.append(hold)
 
+    # Creates a TkinterGrid object, which creates key bindings to modify the grid
     TkinterGrid(grid, root, size)
     root.mainloop()
