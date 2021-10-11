@@ -153,31 +153,3 @@ class KenKenGenerationBlockByBlock:
             self.reserved_values_grid_p2[pos[0]][pos[1]].extend(hold_p2_absolutes)
             block.p1_absolutes.extend(hold_p1_absolutes)
             block.p2_absolutes.extend(hold_p2_absolutes)
-
-    """
-    Returns the information needed by the GUI to show the grid.
-    border_maps: A grid where each element describes what borders it needs
-    signs_values: A grid where each element represents what to put for the top left corner label. 
-                Either (sign + value) if top left corner of block or "" otherwise.
-    """
-    def convert_blocks_to_border_maps_and_sign_values(self):
-        border_maps = []
-        sign_values = []
-
-        hold = [""] * self.sz
-        for i in range(self.sz):
-            border_maps.append(hold.copy())
-            sign_values.append(hold.copy())
-
-        for i, block in enumerate(self.blocks):
-            sign_values[block.top_left_position[0]][block.top_left_position[1]] = (
-                                                                                      block.sign if block.sign is not None else "") + str(
-                int(block.value))
-
-            for pos in block.positions:
-                if (pos[0], pos[1] + 1) not in block.positions and pos[1] + 1 < self.sz:
-                    border_maps[pos[0]][pos[1]] += "e"
-                if (pos[0] + 1, pos[1]) not in block.positions and pos[0] + 1 < self.sz:
-                    border_maps[pos[0]][pos[1]] += "s"
-
-        return border_maps, sign_values

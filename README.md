@@ -37,7 +37,15 @@ Below is a very simply description of how games are generated such that a soluti
 * Otherwise, add the block
 * If a certain number of failed blocks are generated since the previous successful block, then generate a block with only 1 tile (since this will always provide information)
 
-Taking these steps ensures that a solution will exist that can be achieved via logical steps
+Taking these steps ensures that a solution will exist that can be achieved via logical steps.
+
+This program also contains the means to simply randomly generate a KenKen grid with no regards to if it is solvable without backtracking. If you would like to test this functionality out, change the global variable in main RANDOMLY_GENERATE_GRID from False to True. It generates more natural looking games, but may have paths to take where you get "stuck" and need to backtrack,
+unlike the method described above. 
+
+##### Improvements I would like to Make
+* The main improvement I would like to make is to have the program generate more natural looking games. To do this, one modifications to
+be made is that less "single tile blocks" are generated. Encouraging the generator to produce more interesting shaped blocks (such as squares) would also be good.
+* General improvements to the GUI
 
 
 

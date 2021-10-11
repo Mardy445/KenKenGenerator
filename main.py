@@ -1,12 +1,16 @@
 from generate_number_grid import KenKenGrid
 from custom_tile import TileFrame
 from kenken_generation import KenKenGenerationBlockByBlock, get_empty_grid_of_lists, get_empty_grid_of_zeroes
+from randomly_generate_blocks import RandomGridSegmentation
 import tkinter as tk
 import copy
 import random
 
 DELAY_LOWER_BOUND = 50
 DELAY_UPPER_BOUND = 300
+
+RANDOMLY_GENERATE_GRID = False
+
 
 def is_zero_in_grid(grid):
     for row in grid:
@@ -58,7 +62,7 @@ class TkinterGrid:
         reserved_values_grid_p2 = copy.deepcopy(reserved_values_grid_p1)
         blocks = main_generator.blocks
         random.shuffle(blocks)
-        text_list.delete(0,'end')
+        text_list.delete(0, 'end')
         for block in blocks:
             block.complete = False
             block.p1_absolutes = []
@@ -113,9 +117,9 @@ class TkinterGrid:
         reserved_values = set(reserved_values_p1)
         block = f"Block {'' if block.sign is None else block.sign}{block.value} {block.top_left_position}"
         if any(values):
-            text_list.insert("end",f"{block} contains {[v for v in values if not v == 0]} in known tiles")
+            text_list.insert("end", f"{block} contains {[v for v in values if not v == 0]} in known tiles")
         if len(reserved_values) > 0:
-            text_list.insert("end",f"{block} contains {reserved_values} in unknown tiles")
+            text_list.insert("end", f"{block} contains {reserved_values} in unknown tiles")
         if not any(values) and len(reserved_values) == 0:
             text_list.insert("end", f"No useful information from {block} as of yet")
 
@@ -166,8 +170,39 @@ class TkinterGrid:
                 grid[r][c].unfocus()
 
 
+"""
+Returns the information needed by the GUI to show the grid.
+border_maps: A grid where each element describes what borders it needs
+signs_values: A grid where each element represents what to put for the top left corner label. 
+            Either (sign + value) if top left corner of block or "" otherwise.
+"""
+
+
+def convert_blocks_to_border_maps_and_sign_values(blocks, sz):
+    border_maps = []
+    sign_values = []
+
+    hold = [""] * sz
+    for i in range(sz):
+        border_maps.append(hold.copy())
+        sign_values.append(hold.copy())
+
+    for i, block in enumerate(blocks):
+        sign_values[block.top_left_position[0]][block.top_left_position[1]] = (
+                                                                                  block.sign if block.sign is not None else "") + str(
+            int(block.value))
+
+        for pos in block.positions:
+            if (pos[0], pos[1] + 1) not in block.positions and pos[1] + 1 < sz:
+                border_maps[pos[0]][pos[1]] += "e"
+            if (pos[0] + 1, pos[1]) not in block.positions and pos[0] + 1 < sz:
+                border_maps[pos[0]][pos[1]] += "s"
+
+    return border_maps, sign_values
+
+
 if __name__ == '__main__':
-    size = 8
+    size = 6
 
     # Generates a valid grid of numbers
     number_grid_generator = KenKenGrid(size)
@@ -175,22 +210,23 @@ if __name__ == '__main__':
     while n_grid is None:
         n_grid = number_grid_generator.generate_random_grid()
 
-
     # Uses this grid of numbers to generate the kenken grid
-    main_generator = KenKenGenerationBlockByBlock(size, n_grid)
-    main_generator.generate_kenken_grid()
-
-
+    if not RANDOMLY_GENERATE_GRID:
+        main_generator = KenKenGenerationBlockByBlock(size, n_grid)
+        main_generator.generate_kenken_grid()
+    else:
+        main_generator = RandomGridSegmentation(size, n_grid)
+        main_generator.randomly_segment_grid()
 
     # Gets the information needed by the GUI
-    border_code, sign_values = main_generator.convert_blocks_to_border_maps_and_sign_values()
+    border_code, sign_values = convert_blocks_to_border_maps_and_sign_values(main_generator.blocks,size)
 
     # Creates the GUI
     grid = []
     root = tk.Tk()
     right_panel = tk.Frame(root)
-    right_panel.grid(row=0,column=size,rowspan=size)
-    text_list = tk.Listbox(right_panel,height=3*size, width=45)
+    right_panel.grid(row=0, column=size, rowspan=size)
+    text_list = tk.Listbox(right_panel, height=3 * size, width=45)
     text_list.grid(row=0)
     for c in range(size):
         hold = []
